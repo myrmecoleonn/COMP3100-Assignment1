@@ -62,6 +62,11 @@
     }
 
 
+    public void ejwt()throws IOException{
+        this.sendRequest("EJWT");
+        this.rcvRequest();
+    }
+
     public void schdJob(String job)throws IOException{
     this.sendRequest("SCHD " + job + " " + biggestServer_type + " " + serverCounter); 
     if(this.serverCounter<biggestServer_num){
