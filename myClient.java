@@ -5,9 +5,6 @@
     BufferedReader din;
     DataOutputStream dout;
     String[] server_list;
-    String biggestServer_type;
-    int biggestServer_num;
-    int serverCounter = 0;
     String job;
     String lstj_servertype;
     String lstj_data;
@@ -58,7 +55,10 @@
     for(int p = 0; p < no_servers; p++){
     this.server_list[p]=this.rcvRequest();
     }
-
+    if(no_servers==0){
+        this.rcvRequest();
+        return;
+    }
     this.sendRequest("OK");
     this.rcvRequest();
 
@@ -70,43 +70,46 @@
     }
 
     public void lstj()throws IOException{
-        this.est_runtime=9999999;
-        for(int p = 0; p<this.server_list.length; p++){
-            this.est_runtime_temp=0;
-            String temp_servertype = this.server_list[p].split(" ")[0];
-            String temp_serverid=this.server_list[p].split(" ")[1];
-            this.sendRequest("LSTJ "+temp_servertype+" " +temp_serverid);
-            lstj_data=this.rcvRequest();
-            this.sendRequest("OK");
-            int numJobs=(Integer.parseInt(lstj_data.split(" ")[1]));
+        this.est_runtime=99999999;
+            for(int p = 0; p<this.server_list.length; p++){
+                this.est_runtime_temp=0;
+                String temp_servertype = this.server_list[p].split(" ")[0];
+                String temp_serverid=this.server_list[p].split(" ")[1];
+                this.sendRequest("LSTJ "+temp_servertype+" " +temp_serverid);
+                lstj_data=this.rcvRequest();
+                this.sendRequest("OK");
+                int numJobs=(Integer.parseInt(lstj_data.split(" ")[1]));
 
-            if (numJobs==0){
-                this.lstj_servertype=temp_servertype;
-                this.lstj_serverid=temp_serverid;
-                break;
-            }
-            
-            for(int q=0;q<Integer.parseInt(lstj_data.split(" ")[1]);q++){
-                int est_runtime_add=Integer.parseInt(this.rcvRequest().split(" ")[4]);
-                this.est_runtime_temp=this.est_runtime_temp+est_runtime_add;
+                if (numJobs==0){
+                    this.lstj_servertype=temp_servertype;
+                    this.lstj_serverid=temp_serverid;
+                    break;
                 }
-            
-            if (this.est_runtime_temp<this.est_runtime){
-                this.est_runtime=this.est_runtime_temp;
-                this.lstj_servertype=temp_servertype;
-                this.lstj_serverid=temp_serverid;
-            }
+                
+                for(int q=0;q<Integer.parseInt(lstj_data.split(" ")[1]);q++){
+                    int est_runtime_add=Integer.parseInt(this.rcvRequest().split(" ")[4]);
+                    this.est_runtime_temp=this.est_runtime_temp+est_runtime_add;
+                    }
+
+                if (this.est_runtime_temp<this.est_runtime){
+                    this.est_runtime=this.est_runtime_temp;
+                    this.lstj_servertype=temp_servertype;
+                    this.lstj_serverid=temp_serverid;
+                }
             this.sendRequest("OK");
             this.rcvRequest();
-        }
-        
+            }
         this.schdJob(this.job, this.lstj_servertype, this.lstj_serverid);
     }
 
     public void jobnHandle(String[] response)throws IOException{
     job = response[2];
-    this.sendRequest(String.format("GETS Capable %s %s %s", response[4], response[5], response[6]));
+    this.sendRequest(String.format("GETS Avail %s %s %s", response[4], response[5], response[6]));
     this.handleResponse(this.rcvRequest());
+    if(this.server_list.length==0){
+        this.sendRequest(String.format("GETS Capable %s %s %s", response[4], response[5], response[6]));
+        this.handleResponse(this.rcvRequest());
+    }
     lstj();
     return;
     }
